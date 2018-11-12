@@ -29,14 +29,22 @@
 </script>
 
 <script type="text/x-red" data-help-name="ialarm status">
-    <p>A node-red node to control iAlarm (Antifurto365) or other chinese 'TCP IP' alarm system like Meian and Emooluxr</p>
-    <p>output:
-      <pre>{
-    "status": "ARMED_AWAY",
-    "zones" : [{"id":1,"message":"OK"}]
-    }</pre>
-    <p>possible status values are ARMED_AWAY,ARMED_STAY,DISARMED,CANCEL,TRIGGERED</p>
-    <p>possible zones.message values are "zone alarm", "zone bypass", "zone fault", "wireless detector low battery", "wireless detector loss"</p>
+    <p>A node to check the current status of iAlarm (Antifurto365) or other chinese 'TCP IP' alarm system like Meian and Emooluxr</p>
+
+    <h3>Outputs</h3>
+    <dl class="message-properties">
+        <dt>payload
+            <span class="property-type">string | object</span>
+        </dt>
+        <dd> the payload of the message to publish. </dd>
+
+        <dt>status <span class="property-type">string</span></dt>
+        <dd> Current alarm status (possible values are ARMED_AWAY,ARMED_STAY,DISARMED,CANCEL,TRIGGERED).</dd>
+
+        <dt>zones <span class="property-type">array</span></dt>
+        <dd> an array of zones with id and message ({"id":1,"message":"OK"}). possible zones.message values are "zone alarm", "zone bypass", "zone fault", "wireless detector low battery", "wireless detector loss".</dd>
+
+    </dl>
 
 </p>
 </script>
@@ -66,12 +74,56 @@
 </script>
 
 <script type="text/x-red" data-help-name="ialarm events">
-    <p>A node-red node to control iAlarm (Antifurto365) or other chinese 'TCP IP' alarm system like Meian and Emooluxr</p>
-    <p>output:
-      <pre>{
-    "status": "ARMED_AWAY"
-    }</pre>
-    <p>possible values are ARMED_AWAY,ARMED_STAY,DISARMED,CANCEL,TRIGGERED</p>
+    <p>A node to check the last 24 events occourred in an iAlarm (Antifurto365) or other chinese 'TCP IP' alarm system like Meian and Emooluxr</p>
+    <h3>Outputs</h3>
+    <dl class="message-properties">
+        <dt>payload
+            <span class="property-type">array</span>
+        </dt>
+        <dd> An array of events, with date, zone and message.
+        <pre>
+        {"date":"2018-11-12 20:04:09","zone":"70","message":"Sistema Parziale"}
+        </pre>
+        </dd>
+    </dl>
+
+</p>
+</script>
+
+<script type="text/javascript">
+  RED.nodes.registerType('ialarm set',{
+    category: 'input',
+    color: '#e9e9e9',
+    defaults: {
+      server: { value: '', type: 'ialarm-server' }
+    },
+    inputs: 1,
+    outputs: 1,
+    icon: 'bridge.png',
+    label: function() {
+      return this.name || 'iAlarm set';
+    },
+    align: 'left'
+  });
+</script>
+
+<script type="text/x-red" data-template-name="ialarm set">
+    <div class="form-row">
+        <label for="node-input-server"><i class="icon-tag"></i> Server</label>
+        <input type="text" id="node-input-server">
+    </div>
+</script>
+
+<script type="text/x-red" data-help-name="ialarm set">
+  <p>A node to set status on iAlarm (Antifurto365) or other chinese 'TCP IP' alarm system like Meian and Emooluxr</p>
+    <h3>Inputs</h3>
+    <dl class="message-properties">
+        <dt>payload
+            <span class="property-type">string</span>
+        </dt>
+        <dd> The alarm status to set (possible values are ARMED_AWAY,ARMED_STAY,DISARMED,CANCEL,TRIGGERED).</dd>
+    </dl>
+
 </p>
 </script>
 
