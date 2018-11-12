@@ -1,0 +1,110 @@
+<script type="text/javascript">
+  RED.nodes.registerType('ialarm status',{
+    category: 'input',
+    color: '#e9e9e9',
+    defaults: {
+      server: { value: '', type: 'ialarm-server' },
+      refresh: { value: 5000, required:true, validate:RED.validators.number()}
+    },
+    inputs: 0,
+    outputs: 1,
+    icon: 'alert.png',
+    label: function() {
+      return this.name || 'iAlarm status';
+    },
+    align: 'left'
+  });
+</script>
+
+<script type="text/x-red" data-template-name="ialarm status">
+    <div class="form-row">
+        <label for="node-input-server"><i class="icon-tag"></i> Server</label>
+        <input type="text" id="node-input-server">
+    </div>
+    <div class="form-row">
+        <label for="node-input-refresh"><i class="icon-tag"></i> Refresh</label>
+        <input type="text" id="node-input-refresh" >
+    </div>
+    <div class="form-tips"><b>Tip:</b> Refresh is in milliseconds.</div>
+</script>
+
+<script type="text/x-red" data-help-name="ialarm status">
+    <p>A node-red node to control iAlarm (Antifurto365) or other chinese 'TCP IP' alarm system like Meian and Emooluxr</p>
+    <p>output:
+      <pre>{
+    "status": "ARMED_AWAY",
+    "zones" : [{"id":1,"message":"OK"}]
+    }</pre>
+    <p>possible status values are ARMED_AWAY,ARMED_STAY,DISARMED,CANCEL,TRIGGERED</p>
+    <p>possible zones.message values are "zone alarm", "zone bypass", "zone fault", "wireless detector low battery", "wireless detector loss"</p>
+
+</p>
+</script>
+
+<script type="text/javascript">
+  RED.nodes.registerType('ialarm events',{
+    category: 'input',
+    color: '#e9e9e9',
+    defaults: {
+      server: { value: '', type: 'ialarm-server' }
+    },
+    inputs: 1,
+    outputs: 1,
+    icon: 'envelope.png',
+    label: function() {
+      return this.name || 'iAlarm events';
+    },
+    align: 'left'
+  });
+</script>
+
+<script type="text/x-red" data-template-name="ialarm events">
+    <div class="form-row">
+        <label for="node-input-server"><i class="icon-tag"></i> Server</label>
+        <input type="text" id="node-input-server">
+    </div>
+</script>
+
+<script type="text/x-red" data-help-name="ialarm events">
+    <p>A node-red node to control iAlarm (Antifurto365) or other chinese 'TCP IP' alarm system like Meian and Emooluxr</p>
+    <p>output:
+      <pre>{
+    "status": "ARMED_AWAY"
+    }</pre>
+    <p>possible values are ARMED_AWAY,ARMED_STAY,DISARMED,CANCEL,TRIGGERED</p>
+</p>
+</script>
+
+<script type="text/javascript">
+  RED.nodes.registerType('ialarm-server',{
+    category: 'config',
+    defaults: {
+      host: { value:'', required: true },
+      port: { value: 80, required: true, validate: RED.validators.number() },
+      username: { value:'', required: true },
+      password: { value:'', required: true }
+    },
+    label: function() {
+        return this.host + ':' + this.port ;
+    }
+  });
+</script>
+
+<script type="text/x-red" data-template-name="ialarm-server">
+    <div class="form-row">
+        <label for="node-config-input-host"><i class="icon-tag"></i> Host</label>
+        <input type="text" id="node-config-input-host" placeholder="host">
+    </div>
+    <div class="form-row">
+        <label for="node-config-input-port"><i class="icon-tag"></i> Port</label>
+        <input type="text" id="node-config-input-port" placeholder="port">
+    </div>
+    <div class="form-row">
+        <label for="node-config-input-host"><i class="icon-tag"></i> Username</label>
+        <input type="text" id="node-config-input-username" placeholder="username">
+    </div>
+    <div class="form-row">
+        <label for="node-config-input-password"><i class="icon-tag"></i> Password</label>
+        <input type="password" id="node-config-input-password" placeholder="password">
+    </div>
+</script>

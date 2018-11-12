@@ -1,0 +1,34 @@
+{
+  "name": "node-red-contrib-ialarm",
+  "version": "0.0.1",
+  "description": "A node-red node to control iAlarm (Antifurto365) or other chinese \"TCP IP\" alarm system like Meian and Emooluxr",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/maxill1/node-red-contrib-ialarm.git"
+  },
+  "dependencies": {
+    "cheerio": "^1.0.0-rc.2",
+    "request": "^2.0.0"
+  },
+  "keywords": [
+    "node-red",
+    "alarm",
+    "iAlarm",
+    "Antifurto365",
+    "Meian",
+    "Emoolux",
+    "tcp ip alarm"
+  ],
+  "author": {
+    "name": "Luca Mazzilli"
+  },
+  "node-red": {
+    "nodes": {
+      "ialarm": "ialarm.js"
+    }
+  },
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/maxill1/node-red-contrib-ialarm/issues"
+  }
+}
