@@ -1,137 +1,36 @@
-const request = require('request');
-const cheerio = require('cheerio');
-
 module.exports = function(RED) {
+      "use strict";
 
+  const iAlarm = require("ialarm");
   const alarmStatus = {
-      '1':'ARMED_AWAY',
-      '2':'ARMED_STAY',
-      '3':'DISARMED',
-      '4':'CANCEL',
-      '5':'TRIGGERED'
+      "ARMED_AWAY": "armAway",
+      "ARMED_STAY": "armStay",
+      "DISARMED"  : "disarm",
+      "CANCEL"    : "cancel",
+      "TRIGGERED" : "trigger"
   };
 
-  function decodeStatus(value){
-    var st = alarmStatus[value];
-    if(!alarmStatus[value]){
-        //console.log("Unknown status for "+value);
-        throw "unknown status";
-    }
-    //console.log("Found status :" + st + "("+value+")");
-    return st;
+  function newIAlarm(node){
+    return new iAlarm(node.serverConfig.host, node.serverConfig.port, node.serverConfig.username, node.serverConfig.password);
   }
 
-  function toValue(st){
-    for (var value in alarmStatus) {
-      if(alarmStatus[value] === st){
-        return value;
-      }
-    }
-    throw "unknown status";
-  }
-
-  function decodeZoneMsg(ZoneMsg, i){
-    var st = "OK";
-    if(ZoneMsg[i-1] & 3){
-        st = i + " zone alarm";
-    }
-    if(ZoneMsg[i-1] & 8){
-        st = i + " zone bypass";
-    }
-    else if(ZoneMsg[i-1] & 16){
-        st = i + " zone fault";
-    }
-    if((ZoneMsg[i-1] & 32)&&((ZoneMsg[i-1] & 8)==0)){
-        st = i + " wireless detector low battery";
-    }
-    if((ZoneMsg[i-1] & 64)&&((ZoneMsg[i-1] & 8)==0)){
-        st = i + " wireless detector loss";
-    }
-    //console.log("Checking msg for zone " + i + ": "+st);
-    return st;
-  }
-
-  function parseZoneMsg(line){
-    var zones = [];
-    node.log("Found ZoneMsg "+line);
-    var start = line.indexOf('(')+1;
-    var end = line.indexOf(')');
-    var ZoneMsg = line.substring(start,end);
-    ZoneMsg = ZoneMsg.split(",");
-    for (var i = 0; i < ZoneMsg.length; i++) {
-      var msg = decodeZoneMsg(ZoneMsg, i);
-      if(msg){
-        //1 based
-        zones.push({id: i+1, message: msg});
-      }
-    }
-
-    return zones;
-  }
-
-  function getHeaders(serverConfig){
-    return {
-      'Authorization': 'Basic ' + Buffer.from(serverConfig.username + ':' + serverConfig.password).toString('base64')
-    };
-  }
-
-  function get(node, page, callback){
-    const serverConfig = node.serverConfig;
-    const url = 'http://'+serverConfig.host+':'+serverConfig.port+page;//'/SystemLog.htm';
-    node.debug("Retrieving events: "+url);
-    var auth = 'Basic ' + Buffer.from(serverConfig.username + ':' + serverConfig.password).toString('base64');
-    var options = {
-      url: url,
-      headers: getHeaders(serverConfig)
-    };
-    request.get(options, function(err, response, body){
-      //console.log(JSON.stringify(response));
-      if(response.statusCode!==200 || err){
-        console.log('error '+response.statusCode+': '+err);
-        console.log(err);
-        node.status({fill:"red",shape:"dot",text:"Error: "+response.statusCode + " "+err});
-        node.send({payload: "Response error: "+response.statusCode});
-        return;
-      }
-      node.status({fill:"green",shape:"dot",text:"connected"});
-
-      callback(body)
-    });
-  }
-
-  function post(node, page, formData, callback){
-    const serverConfig = node.serverConfig;
-    const url = 'http://'+serverConfig.host+':'+serverConfig.port+page;//'/SystemLog.htm';
-    node.debug("Retrieving events: "+url);
-    var options = {
-      url: url,
-      headers: getHeaders(serverConfig),
-      form: formData
-    };
-    request.post(options, function(err, response, body){
-      //console.log(JSON.stringify(response));
-      if(response.statusCode!==200 || err){
-        console.log('error '+response.statusCode+': '+err);
-        console.log(err);
-        node.status({fill:"red",shape:"dot",text:"Error: "+response.statusCode + " "+err});
-        node.send({payload: "Response error: "+response.statusCode});
-        return;
-      }
-      node.status({fill:"green",shape:"dot",text:"submitted"});
-
-      callback(body)
-    });
+  function nodeStatus(node, message){
+    node.log(message);
+    node.status({fill:"green",shape:"dot",text: message});
   }
 
   function handleError(node, e){
-    var msg = "error " +e.message;
+    let error = e;
+    if(e.message){
+      error = e.message;
+    }
+    let msg = "error " +error;
     node.log(msg);
     console.log(e);
     node.status({fill:"red",shape:"ring",text: msg});
   }
 
   function IalarmStatus(config) {
-
 
     var node = this;
     //create node
@@ -145,48 +44,30 @@ module.exports = function(RED) {
 
     function fetchStatus() {
 
-      get(node, '/RemoteCtr.htm' , function(body){
-        try {
-          const $ = cheerio.load(body)
+      try {
+        const alarm = newIAlarm(node);
 
-          var tag = $('option[selected=selected]');
-          var value = tag.attr('value');
+        alarm.on("command", function (commandResponse) {
+          console.log("command: "+commandResponse);
+        });
+        alarm.on("response", function (response) {
+          //console.log("Responded: "+response);
+        });
+        alarm.on("error", function (err) {
+          console.log("error: "+err);
+        });
 
-          var data = {};
-          data.zones = [];
-          //alarm status
-          data.status = decodeStatus(value);
-          node.status({fill:"green",shape:"dot",text:"last status: "+data.status});
+        alarm.on("status", function (status) {
+          nodeStatus(node, "status:" + status.status)
+          console.log("status: "+JSON.stringify(status));
+          node.send({payload: status});
+        });
 
-          //zones and messages
-          var scriptLines = $('script').html().split('\n');
-          node.debug("scriptLines "+scriptLines);
-          for (var l = 0; l < scriptLines.length; l++) {
-            var line = scriptLines[l];
-            //var ZoneMsg = new Array(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
-            if(line.indexOf("var ZoneMsg")>-1){
-              //node.log("Found ZoneMsg "+line);
-              var start = line.indexOf('(')+1;
-              var end = line.indexOf(')');
-              var ZoneMsg = line.substring(start,end);
-              ZoneMsg = ZoneMsg.split(",");
-              for (var i = 0; i < ZoneMsg.length; i++) {
-                var msg = decodeZoneMsg(ZoneMsg, i);
-                if(msg){
-                  //1 based
-                  data.zones.push({id: i+1, message: msg});
-                }
-              }
-              break;
-            }
-          }
+        alarm.getStatus();
 
-          //node.log("iAlarm status "+data.status);
-          node.send({payload: data});
-        } catch (e) {
-          handleError(node, e);
-        }
-      });
+      } catch (e) {
+        handleError(node, e);
+      }
     }
     node.log("checking iAlarm every "+config.refresh +" milliseconds");
     setInterval(fetchStatus, config.refresh);
@@ -194,7 +75,6 @@ module.exports = function(RED) {
   RED.nodes.registerType("ialarm status", IalarmStatus);
 
   function IalarmEvents(config) {
-
 
     var node = this;
     //create node
@@ -206,31 +86,36 @@ module.exports = function(RED) {
       return;
     }
 
-    node.on('input', function(msg) {
+    node.on("input", function(msg) {
 
-      get(node, '/SystemLog.htm' , function(body){
-        try {
-          const $ = cheerio.load(body)
-          var events = [];
-          $('tr').each(function(i, elem) {
-            var ev = $(this).html();
+      try {
 
-            var child$ = cheerio.load(this);
-            let td = child$('td').map(function () {
-              return child$(this).text().trim();
-            }).get();
+        const alarm = newIAlarm(node);
 
-            if(td[0] && td[1] && td[2]){
-              var event = {date: td[0], zone: td[1], message: td[2]};
-              events.push(event);
-            }
-          });
+        alarm.on("response", function (response) {
+          //console.log("Responded: "+response);
+        });
+        alarm.on("error", function (err) {
+          console.log("error: "+err);
+        });
+
+        alarm.on("events", function (events) {
+          let lastEvent = "No events";
+          if(events.length>0){
+            let ev = events[0];
+            lastEvent =  "recent events:" + ev.date + " "+ev.message+" (zone "+ev.zone+")";
+          }
+          nodeStatus(node, lastEvent)
+          console.log("events: "+JSON.stringify(events));
           node.send({payload: events});
+        });
 
-        } catch (e) {
-          handleError(node, e);
-        }
-      });
+        alarm.getEvents();
+
+      } catch (e) {
+        handleError(node, e);
+      }
+
     });
   }
   RED.nodes.registerType("ialarm events", IalarmEvents);
@@ -247,39 +132,30 @@ module.exports = function(RED) {
       return;
     }
 
-    node.on('input', function(msg) {
+    node.on("input", function(msg) {
 
       var commandType = msg.payload;
-      var value = toValue(commandType);
-      var formData = {'Ctrl': value, 'BypassNum': '00', 'BypassOpt': '0'}
+      var commandName = alarmStatus[commandType];
+      if(!commandName){
+        handleError(node, "invalid command: "+commandType);
+        return;
+      }
 
-      node.log("Sending " +JSON.stringify(formData));
+      const alarm = newIAlarm(node);
 
-
-      post(node, '/RemoteCtr.htm', formData, function(body){
-        try {
-          const $ = cheerio.load(body)
-          var events = [];
-          $('tr').each(function(i, elem) {
-            var ev = $(this).html();
-
-            var child$ = cheerio.load(this);
-            let td = child$('td').map(function () {
-              return child$(this).text().trim();
-            }).get();
-
-            if(td[0] && td[1] && td[2]){
-              var event = {date: td[0], zone: td[1], message: td[2]};
-              events.push(event);
-            }
-          });
-          node.send({payload: events});
-
-        } catch (e) {
-          handleError(node, e);
-        }
+      alarm.on("command", function (commandResponse) {
+        nodeStatus(node, "status:" + status.status)
+        console.log("status: "+JSON.stringify(commandResponse));
+        node.send({payload: commandResponse});
+      });
+      alarm.on("response", function (response) {
+        //console.log("Responded: "+response);
+      });
+      alarm.on("error", function (err) {
+        console.log("error: "+err);
       });
 
+      alarm[commandName]();
     });
   }
   RED.nodes.registerType("ialarm set", IalarmSet);
