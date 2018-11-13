@@ -15,7 +15,7 @@ module.exports = function(RED) {
   }
 
   function nodeStatus(node, message){
-    node.log(message);
+    node.debug(message);
     node.status({fill:"green",shape:"dot",text: message});
   }
 
@@ -47,9 +47,6 @@ module.exports = function(RED) {
       try {
         const alarm = newIAlarm(node);
 
-        alarm.on("command", function (commandResponse) {
-          console.log("command: "+commandResponse);
-        });
         alarm.on("response", function (response) {
           //console.log("Responded: "+response);
         });
@@ -59,7 +56,7 @@ module.exports = function(RED) {
 
         alarm.on("status", function (status) {
           nodeStatus(node, "status:" + status.status)
-          console.log("status: "+JSON.stringify(status));
+          //console.log("status: "+JSON.stringify(status));
           node.send({payload: status});
         });
 
@@ -106,7 +103,7 @@ module.exports = function(RED) {
             lastEvent =  "recent events:" + ev.date + " "+ev.message+" (zone "+ev.zone+")";
           }
           nodeStatus(node, lastEvent)
-          console.log("events: "+JSON.stringify(events));
+          //console.log("events: "+JSON.stringify(events));
           node.send({payload: events});
         });
 
@@ -145,7 +142,7 @@ module.exports = function(RED) {
 
       alarm.on("command", function (commandResponse) {
         nodeStatus(node, "status:" + status.status)
-        console.log("status: "+JSON.stringify(commandResponse));
+        //console.log("status: "+JSON.stringify(commandResponse));
         node.send({payload: commandResponse});
       });
       alarm.on("response", function (response) {
