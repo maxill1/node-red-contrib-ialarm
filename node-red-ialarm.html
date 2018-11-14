@@ -33,16 +33,14 @@
 
     <h3>Outputs</h3>
     <dl class="message-properties">
-        <dt>payload
-            <span class="property-type">string | object</span>
-        </dt>
-        <dd> the payload of the message to publish. </dd>
-
-        <dt>status <span class="property-type">string</span></dt>
+        <dt>payload.status <span class="property-type">string</span></dt>
         <dd> Current alarm status (possible values are ARMED_AWAY,ARMED_STAY,DISARMED,CANCEL,TRIGGERED).</dd>
 
-        <dt>zones <span class="property-type">array</span></dt>
+        <dt>payload.zones <span class="property-type">array</span></dt>
         <dd> an array of zones with id and message ({"id":1,"message":"OK"}). possible zones.message values are "zone alarm", "zone bypass", "zone fault", "wireless detector low battery", "wireless detector loss".</dd>
+
+        <dt>error <span class="property-type">string</span></dt>
+        <dd>Every connection error will be carried by msg.error </dd>
 
     </dl>
 
@@ -85,6 +83,9 @@
         {"date":"2018-11-12 20:04:09","zone":"70","message":"Sistema Parziale"}
         </pre>
         </dd>
+        <dt>error <span class="property-type">string</span></dt>
+        <dd>Every connection error will be carried by msg.error </dd>
+
     </dl>
 
 </p>
@@ -122,6 +123,19 @@
             <span class="property-type">string</span>
         </dt>
         <dd> The alarm status to set (possible values are ARMED_AWAY,ARMED_STAY,DISARMED,CANCEL,TRIGGERED).</dd>
+    </dl>
+
+    <h3>Outputs</h3>
+    <dl class="message-properties">
+        <dt>payload.status <span class="property-type">string</span></dt>
+        <dd> Current alarm status (possible values are ARMED_AWAY,ARMED_STAY,DISARMED,CANCEL,TRIGGERED).</dd>
+
+        <dt>payload.zones <span class="property-type">array</span></dt>
+        <dd> an array of zones with id and message ({"id":1,"message":"OK"}). possible zones.message values are "zone alarm", "zone bypass", "zone fault", "wireless detector low battery", "wireless detector loss".</dd>
+
+        <dt>error <span class="property-type">string</span></dt>
+        <dd>Every connection error will be carried by msg.error </dd>
+
     </dl>
 
 </p>

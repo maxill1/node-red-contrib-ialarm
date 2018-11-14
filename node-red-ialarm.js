@@ -52,6 +52,7 @@ module.exports = function(RED) {
         });
         alarm.on("error", function (err) {
           console.log("error: "+err);
+          node.send({error: err});
         });
 
         alarm.on("status", function (status) {
@@ -101,6 +102,7 @@ module.exports = function(RED) {
         });
         alarm.on("error", function (err) {
           console.log("error: "+err);
+          node.send({error: err});
         });
 
         alarm.on("events", function (events) {
@@ -157,6 +159,8 @@ module.exports = function(RED) {
       });
       alarm.on("error", function (err) {
         console.log("error: "+err);
+        handleError(node, err);
+        node.send({error: err});
       });
 
       alarm[commandName]();
