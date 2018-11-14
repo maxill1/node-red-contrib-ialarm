@@ -141,7 +141,7 @@ module.exports = function(RED) {
       const alarm = newIAlarm(node);
 
       alarm.on("command", function (commandResponse) {
-        nodeStatus(node, "status:" + status.status)
+        nodeStatus(node, "status:" + commandResponse.status)
         //console.log("status: "+JSON.stringify(commandResponse));
         node.send({payload: commandResponse});
       });
