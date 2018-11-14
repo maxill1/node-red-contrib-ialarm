@@ -91,7 +91,7 @@
 </script>
 
 <script type="text/javascript">
-  RED.nodes.registerType('ialarm set',{
+  RED.nodes.registerType('ialarm command',{
     category: 'input',
     color: '#e9e9e9',
     defaults: {
@@ -107,14 +107,14 @@
   });
 </script>
 
-<script type="text/x-red" data-template-name="ialarm set">
+<script type="text/x-red" data-template-name="ialarm command">
     <div class="form-row">
         <label for="node-input-server"><i class="icon-tag"></i> Server</label>
         <input type="text" id="node-input-server">
     </div>
 </script>
 
-<script type="text/x-red" data-help-name="ialarm set">
+<script type="text/x-red" data-help-name="ialarm command">
   <p>A node to set status on iAlarm (Antifurto365) or other chinese 'TCP IP' alarm system like Meian and Emooluxr</p>
     <h3>Inputs</h3>
     <dl class="message-properties">

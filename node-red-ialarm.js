@@ -67,7 +67,14 @@ module.exports = function(RED) {
       }
     }
     node.log("checking iAlarm every "+config.refresh +" milliseconds");
-    setInterval(fetchStatus, config.refresh);
+    node.statusInterval = setInterval(fetchStatus, config.refresh);
+
+    node.on("close", function() {
+      if(node.statusInterval){
+        node.log("clearing iAlarm interval");
+        clearInterval(node.statusInterval);
+      }
+    });
   }
   RED.nodes.registerType("ialarm status", IalarmStatus);
 
@@ -155,7 +162,7 @@ module.exports = function(RED) {
       alarm[commandName]();
     });
   }
-  RED.nodes.registerType("ialarm set", IalarmSet);
+  RED.nodes.registerType("ialarm command", IalarmSet);
 
   function IalarmServerNode(config) {
     var node = this;
