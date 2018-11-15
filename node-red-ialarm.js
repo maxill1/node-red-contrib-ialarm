@@ -4,7 +4,7 @@ module.exports = function(RED) {
   const iAlarm = require("ialarm");
   const alarmStatus = {
       "ARMED_AWAY": "armAway",
-      "ARMED_STAY": "armStay",
+      "ARMED_HOME": "armHome",
       "DISARMED"  : "disarm",
       "CANCEL"    : "cancel",
       "TRIGGERED" : "trigger"
