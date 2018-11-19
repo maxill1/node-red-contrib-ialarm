@@ -23,7 +23,7 @@ outputs a payload with the last 24 events recorded in iAlarm host
 
 ### iAlarm command
 send a command to iAlarm:
-- ARMED_AWAY
-- ARMED_HOME
-- DISARMED
+- ARMED_AWAY/ARM_AWAY
+- ARMED_HOME/ARM_HOME
+- DISARMED/DISARM
 - CANCEL
