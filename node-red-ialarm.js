@@ -14,12 +14,18 @@ module.exports = function(RED) {
   };
 
   function newIAlarm(node){
-    return new iAlarm(node.serverConfig.host, node.serverConfig.port, node.serverConfig.username, node.serverConfig.password);
+    //node.log("Creating iAlarm instance");
+    return new iAlarm(node.serverConfig.host, node.serverConfig.port,
+                      node.serverConfig.username, node.serverConfig.password,
+                      node.serverConfig.zones);
   }
 
-  function nodeStatus(node, message){
+  function nodeStatus(node, message, color){
     node.debug(message);
-    node.status({fill:"green",shape:"dot",text: message});
+    if(!color){
+      color = "green";
+    }
+    node.status({fill:color,shape:"dot",text: message});
   }
 
   function handleError(node, e){
@@ -29,7 +35,7 @@ module.exports = function(RED) {
     }
     let msg = "error " +error;
     node.log(msg);
-    console.log(e);
+    node.log(e);
     node.status({fill:"red",shape:"ring",text: msg});
   }
 
@@ -45,40 +51,59 @@ module.exports = function(RED) {
       return;
     }
 
-    function fetchStatus() {
+    nodeStatus(node, "idle", "blue");
 
-      try {
-        const alarm = newIAlarm(node);
+    var globalContext = this.context().global;
 
-        alarm.on("response", function (response) {
-          //console.log("Responded: "+response);
-        });
-        alarm.on("error", function (err) {
-          console.log("error: "+err);
-          node.send({error: err});
-        });
+    try {
+      const alarm = newIAlarm(node);
 
-        alarm.on("status", function (status) {
-          nodeStatus(node, "status:" + status.status)
-          //console.log("status: "+JSON.stringify(status));
-          node.send({payload: status});
-        });
+      var fetchStatus = function() {
+        if(!globalContext.zonesCache || globalContext.zonesCache.caching){
+          nodeStatus(node, "loading "+node.serverConfig.zones+" zones cache..." , "yellow");
+        }else{
+          nodeStatus(node, "querying", "blue");
+        }
 
         alarm.getStatus();
+      };
 
-      } catch (e) {
-        handleError(node, e);
-      }
+      alarm.on("response", function (response) {
+        //node.log("Responded: "+response);
+      });
+      alarm.on("error", function (err) {
+        node.log("error: "+err);
+        node.send({error: err});
+      });
+
+      alarm.on("status", function (status) {
+        nodeStatus(node, "status:" + status.status);
+        //node.log("status: "+JSON.stringify(status));
+
+        //add zone names
+        if(status.zones){
+          for (var i = 0; i < status.zones.length; i++) {
+            var zone = status.zones[i];
+            zone.name = node.serverConfig.getCachedName(zone.id);
+          }
+        }
+        //output
+        node.send({payload: status});
+      });
+
+      node.log("Checking iAlarm every "+config.refresh +" milliseconds");
+      node.statusInterval = setInterval(fetchStatus, config.refresh);
+
+      node.on("close", function() {
+        if(node.statusInterval){
+          node.log("clearing iAlarm interval");
+          clearInterval(node.statusInterval);
+        }
+      });
+    } catch (e) {
+      handleError(node, e);
     }
-    node.log("checking iAlarm every "+config.refresh +" milliseconds");
-    node.statusInterval = setInterval(fetchStatus, config.refresh);
 
-    node.on("close", function() {
-      if(node.statusInterval){
-        node.log("clearing iAlarm interval");
-        clearInterval(node.statusInterval);
-      }
-    });
   }
   RED.nodes.registerType("ialarm status", IalarmStatus);
 
@@ -101,21 +126,30 @@ module.exports = function(RED) {
         const alarm = newIAlarm(node);
 
         alarm.on("response", function (response) {
-          //console.log("Responded: "+response);
+          //node.log("Responded: "+response);
         });
         alarm.on("error", function (err) {
-          console.log("error: "+err);
+          node.log("error: "+err);
           node.send({error: err});
         });
 
         alarm.on("events", function (events) {
           let lastEvent = "No events";
           if(events.length>0){
+
+            for (var i = 0; i < events.length; i++) {
+              events[i].name = node.serverConfig.getCachedName(events[i].zone);
+            }
+
             let ev = events[0];
-            lastEvent =  "recent events:" + ev.date + " "+ev.message+" (zone "+ev.zone+")";
+            var description = ev.zone;
+            if(ev.name){
+              description = description+ " "+ ev.name;
+            }
+            lastEvent =  "recent events:" + ev.date + " "+ev.message+" (zone "+description +")";
           }
-          nodeStatus(node, lastEvent)
-          //console.log("events: "+JSON.stringify(events));
+          nodeStatus(node, lastEvent);
+          //node.log("events: "+JSON.stringify(events));
           node.send({payload: events});
         });
 
@@ -153,15 +187,15 @@ module.exports = function(RED) {
       const alarm = newIAlarm(node);
 
       alarm.on("command", function (commandResponse) {
-        nodeStatus(node, "status:" + commandResponse.status)
-        //console.log("status: "+JSON.stringify(commandResponse));
+        nodeStatus(node, "status:" + commandResponse.status);
+        //node.log("status: "+JSON.stringify(commandResponse));
         node.send({payload: commandResponse});
       });
       alarm.on("response", function (response) {
-        //console.log("Responded: "+response);
+        //node.log("Responded: "+response);
       });
       alarm.on("error", function (err) {
-        console.log("error: "+err);
+        node.log("error: "+err);
         handleError(node, err);
         node.send({error: err});
       });
@@ -174,20 +208,53 @@ module.exports = function(RED) {
   function IalarmServerNode(config) {
     var node = this;
     RED.nodes.createNode(this, config);
-    node.log(config.singleMessage);
+
+    var globalContext = this.context().global;
 
     this.host = config.host;
     this.port = config.port;
     this.username = config.username;
     this.password = config.password;
+    this.zones = config.zones;
 
     if (!node.host || !node.port || !node.username || !node.password) {
       return;
     }
 
+    var stub = {serverConfig : node};
+    const alarm = newIAlarm(stub);
+    alarm.on('allZones', function (zones) {
+      var info = "got "+Object.keys(zones).length+" zones info";
+      nodeStatus(node, info);
+      globalContext.zonesCache.zones = zones;
+      globalContext.zonesCache.caching = false;
+    });
+
+    alarm.on('zoneInfo', function (zoneInfo) {
+      node.log("zoneInfo: "+JSON.stringify(zoneInfo));
+    });
+
+    if(!globalContext.zonesCache){
+      globalContext.zonesCache = {};
+    }
+    if(!globalContext.zonesCache.zones  && !globalContext.zonesCache.caching){
+        globalContext.zonesCache.zones = {};
+        globalContext.zonesCache.caching = true;
+        alarm.getAllZones();
+    }
+    this.getCachedName = function(id){
+      if(globalContext.zonesCache &&
+        globalContext.zonesCache.zones &&
+        globalContext.zonesCache.zones[id]){
+        return globalContext.zonesCache.zones[id].name;
+      }
+      return undefined;
+    };
+
     node.on("close", function() {
-      //TODO
+      node.log("Reset zones cache");
+      globalContext.zonesCache = undefined;
     });
   }
   RED.nodes.registerType("ialarm-server", IalarmServerNode);
-}
+};
