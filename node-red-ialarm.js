@@ -51,60 +51,49 @@ module.exports = function(RED) {
       return;
     }
 
-    nodeStatus(node, "idle", "blue");
+    node.on("input", function(msg) {
+        nodeStatus(node, "idle", "blue");
+        var globalContext = this.context().global;
 
-    var globalContext = this.context().global;
+        try {
+          const alarm = newIAlarm(node);
 
-    try {
-      const alarm = newIAlarm(node);
+          alarm.on("response", function (response) {
+            //node.log("Responded: "+response);
+          });
+          alarm.on("error", function (err) {
+            node.log("error: "+err);
+            node.send({error: err});
+          });
 
-      var fetchStatus = function() {
-        if(!globalContext.zonesCache || globalContext.zonesCache.caching){
-          nodeStatus(node, "loading "+node.serverConfig.zones+" zones cache..." , "yellow");
-        }else{
-          nodeStatus(node, "querying", "blue");
-        }
+          alarm.on("status", function (status) {
+            nodeStatus(node, "status:" + status.status);
+            //node.log("status: "+JSON.stringify(status));
 
-        alarm.getStatus();
-      };
+            //add zone names
+            if(status.zones){
+              for (var i = 0; i < status.zones.length; i++) {
+                var zone = status.zones[i];
+                zone.name = node.serverConfig.getCachedName(zone.id);
+              }
+            }
+            //output
+            node.send({payload: status});
+          });
 
-      alarm.on("response", function (response) {
-        //node.log("Responded: "+response);
-      });
-      alarm.on("error", function (err) {
-        node.log("error: "+err);
-        node.send({error: err});
-      });
-
-      alarm.on("status", function (status) {
-        nodeStatus(node, "status:" + status.status);
-        //node.log("status: "+JSON.stringify(status));
-
-        //add zone names
-        if(status.zones){
-          for (var i = 0; i < status.zones.length; i++) {
-            var zone = status.zones[i];
-            zone.name = node.serverConfig.getCachedName(zone.id);
+      	if(config.waitnames && (!globalContext.zonesCache || globalContext.zonesCache.caching)){
+            nodeStatus(node, "loading "+node.serverConfig.zones+" zones cache..." , "yellow");
+          }else{
+            nodeStatus(node, "querying", "blue");
+            alarm.getStatus();
           }
+
+        } catch (e) {
+          handleError(node, e);
         }
-        //output
-        node.send({payload: status});
-      });
+    });
+}
 
-      node.log("Checking iAlarm every "+config.refresh +" milliseconds");
-      node.statusInterval = setInterval(fetchStatus, config.refresh);
-
-      node.on("close", function() {
-        if(node.statusInterval){
-          node.log("clearing iAlarm interval");
-          clearInterval(node.statusInterval);
-        }
-      });
-    } catch (e) {
-      handleError(node, e);
-    }
-
-  }
   RED.nodes.registerType("ialarm status", IalarmStatus);
 
   function IalarmEvents(config) {

@@ -4,9 +4,9 @@
     color: '#e9e9e9',
     defaults: {
       server: { value: '', type: 'ialarm-server' },
-      refresh: { value: 5000, required:true, validate:RED.validators.number()}
+      waitnames: { value: true, required:true}
     },
-    inputs: 0,
+    inputs: 1,
     outputs: 1,
     icon: 'alert.png',
     label: function() {
@@ -22,10 +22,10 @@
         <input type="text" id="node-input-server">
     </div>
     <div class="form-row">
-        <label for="node-input-refresh"><i class="icon-tag"></i> Refresh</label>
-        <input type="text" id="node-input-refresh" >
+        <label for="node-input-waitnames"><i class="icon-tag"></i> Wait name cache</label>
+        <input type="checkbox" id="node-input-waitnames" >
     </div>
-    <div class="form-tips"><b>Tip:</b> Refresh is in milliseconds.</div>
+    <div class="form-tips"><b>Tip:</b> Default: wait for zone names cache process to complete.</div>
 </script>
 
 <script type="text/x-red" data-help-name="ialarm status">
