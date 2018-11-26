@@ -74,7 +74,11 @@ module.exports = function(RED) {
             if(status.zones){
               for (var i = 0; i < status.zones.length; i++) {
                 var zone = status.zones[i];
-                zone.name = node.serverConfig.getCachedName(zone.id);
+                var zoneCache = node.serverConfig.getZoneCache(zone.id);
+                if(zoneCache){
+                  zone.name = zoneCache.name;
+                  zone.type = zoneCache.type;
+                }
               }
             }
             //output
@@ -127,7 +131,11 @@ module.exports = function(RED) {
           if(events.length>0){
 
             for (var i = 0; i < events.length; i++) {
-              events[i].name = node.serverConfig.getCachedName(events[i].zone);
+              var zoneCache = node.serverConfig.getZoneCache(events[i].zone);
+              if(zoneCache){
+                events[i].name = zoneCache.name;
+                events[i].type = zoneCache.type;
+              }
             }
 
             let ev = events[0];
@@ -231,11 +239,11 @@ module.exports = function(RED) {
         globalContext.zonesCache.caching = true;
         alarm.getAllZones();
     }
-    this.getCachedName = function(id){
+    this.getZoneCache = function(id){
       if(globalContext.zonesCache &&
         globalContext.zonesCache.zones &&
         globalContext.zonesCache.zones[id]){
-        return globalContext.zonesCache.zones[id].name;
+        return globalContext.zonesCache.zones[id];
       }
       return undefined;
     };
