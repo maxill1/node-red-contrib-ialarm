@@ -1,6 +1,9 @@
 # node-red-contrib-ialarm
 A collection of node-red nodes to control iAlarm (https://www.antifurtocasa365.it/) or other chinese 'TCP IP' alarm system like Meian and Emooluxr with https://github.com/maxill1/node-ialarm
 
+<a href="https://www.buymeacoffee.com/maxill1" target="_blank">
+<img src="https://www.buymeacoffee.com/assets/img/guidelines/download-assets-sm-2.svg" alt="Buy Me A Coffee"></a>
+
 ## Installation
 ```
 npm install node-red-contrib-ialarm
