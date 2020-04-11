@@ -53,7 +53,6 @@ module.exports = function(RED) {
 
     node.on("input", function(msg) {
         nodeStatus(node, "idle", "blue");
-        var globalContext = this.context().global;
 
         try {
           const alarm = newIAlarm(node);
@@ -63,6 +62,7 @@ module.exports = function(RED) {
           });
           alarm.on("error", function (err) {
             node.log("error: "+err);
+            handleError(node, err);
             node.send({error: err});
           });
 
@@ -85,7 +85,7 @@ module.exports = function(RED) {
             node.send({payload: status});
           });
 
-      	if(config.waitnames && (!globalContext.zonesCache || globalContext.zonesCache.caching)){
+      	if(config.waitnames && (!node.serverConfig.zonesCache || node.serverConfig.zonesCache.caching)){
             nodeStatus(node, "loading "+node.serverConfig.zones+" zones cache..." , "yellow");
           }else{
             nodeStatus(node, "querying", "blue");
@@ -123,6 +123,7 @@ module.exports = function(RED) {
         });
         alarm.on("error", function (err) {
           node.log("error: "+err);
+          handleError(node, err);
           node.send({error: err});
         });
 
@@ -206,8 +207,6 @@ module.exports = function(RED) {
     var node = this;
     RED.nodes.createNode(this, config);
 
-    var globalContext = this.context().global;
-
     this.host = config.host;
     this.port = config.port;
     this.username = config.username;
@@ -223,34 +222,38 @@ module.exports = function(RED) {
     alarm.on('allZones', function (zones) {
       var info = "got "+Object.keys(zones).length+" zones info";
       nodeStatus(node, info);
-      globalContext.zonesCache.zones = zones;
-      globalContext.zonesCache.caching = false;
+      node.zonesCache.zones = zones;
+      node.zonesCache.caching = false;
     });
 
     alarm.on('zoneInfo', function (zoneInfo) {
       node.log("zoneInfo: "+JSON.stringify(zoneInfo));
     });
 
-    if(!globalContext.zonesCache){
-      globalContext.zonesCache = {};
+    alarm.on('error', function (error) {
+      node.log("error connecting to : "+node.host + ":"+node.port +" - "+error);
+    });
+
+    if(!node.zonesCache){
+      node.zonesCache = {};
     }
-    if(!globalContext.zonesCache.zones  && !globalContext.zonesCache.caching){
-        globalContext.zonesCache.zones = {};
-        globalContext.zonesCache.caching = true;
+    if(!node.zonesCache.zones  && !node.zonesCache.caching){
+        node.zonesCache.zones = {};
+        node.zonesCache.caching = true;
         alarm.getAllZones();
     }
     this.getZoneCache = function(id){
-      if(globalContext.zonesCache &&
-        globalContext.zonesCache.zones &&
-        globalContext.zonesCache.zones[id]){
-        return globalContext.zonesCache.zones[id];
+      if(node.zonesCache &&
+        node.zonesCache.zones &&
+        node.zonesCache.zones[id]){
+        return node.zonesCache.zones[id];
       }
       return undefined;
     };
 
     node.on("close", function() {
       node.log("Reset zones cache");
-      globalContext.zonesCache = undefined;
+      node.zonesCache = undefined;
     });
   }
   RED.nodes.registerType("ialarm-server", IalarmServerNode);
