@@ -7,8 +7,8 @@
     "url": "git://github.com/maxill1/node-red-contrib-ialarm.git"
   },
   "dependencies": {
-    "cheerio": "^1.0.0-rc.2",
-    "ialarm": ">=0.0.9"
+    "cheerio": "^1.0.0-rc.3",
+    "ialarm": "^0.3.2"
   },
   "keywords": [
     "node-red",
