@@ -63,6 +63,7 @@ module.exports = function(RED) {
           });
           alarm.on("error", function (err) {
             node.log("error: "+err);
+            handleError(node, err);
             node.send({error: err});
           });
 
@@ -123,6 +124,7 @@ module.exports = function(RED) {
         });
         alarm.on("error", function (err) {
           node.log("error: "+err);
+          handleError(node, err);
           node.send({error: err});
         });
 
@@ -229,6 +231,10 @@ module.exports = function(RED) {
 
     alarm.on('zoneInfo', function (zoneInfo) {
       node.log("zoneInfo: "+JSON.stringify(zoneInfo));
+    });
+
+    alarm.on('error', function (error) {
+      node.log("error connecting to : "+node.host + ":"+node.port +" - "+error);
     });
 
     if(!globalContext.zonesCache){
